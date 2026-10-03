@@ -1,0 +1,4 @@
+ALTER TABLE snippets
+ADD COLUMN
+snippet_status VARCHAR(255) NOT NULL DEFAULT 'PENDING';
+

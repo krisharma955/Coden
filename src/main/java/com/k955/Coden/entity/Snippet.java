@@ -2,6 +2,7 @@ package com.k955.Coden.entity;
 
 import com.k955.Coden.enums.Snippet.Framework;
 import com.k955.Coden.enums.Snippet.Language;
+import com.k955.Coden.enums.Snippet.SnippetStatus;
 import com.k955.Coden.enums.Snippet.SnippetType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,12 +47,17 @@ public class Snippet {
     @Column(nullable = false)
     SnippetType snippetType;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    SnippetStatus snippetStatus = SnippetStatus.PENDING;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     User createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewed_by_id", nullable = false)
+    @JoinColumn(name = "reviewed_by_id")
     User reviewedBy;
 
     @CreationTimestamp
