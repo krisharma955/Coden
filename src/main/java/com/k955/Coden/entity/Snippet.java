@@ -7,8 +7,6 @@ import com.k955.Coden.enums.Snippet.SnippetType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -60,12 +58,24 @@ public class Snippet {
     @JoinColumn(name = "reviewed_by_id")
     User reviewedBy;
 
-    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     Instant createdAt;
 
-    @UpdateTimestamp
+    @Column(nullable = false)
     Instant updatedAt;
 
     Instant deletedAt;
+
+    @PrePersist //now jpa sets timestamp before insertion
+    protected void onCreate() {
+        Instant now = Instant.now();
+        if(createdAt == null) createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
+    }
 
 }

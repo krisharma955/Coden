@@ -1,4 +1,65 @@
 package com.k955.Coden.enums.Snippet;
 
 public enum SnippetType {
+    AUTHENTICATION,
+    AUTHORIZATION,
+    DATABASE,
+    API,
+    HTTP,
+    CRUD,
+    VALIDATION,
+    SECURITY,
+
+    FILE_HANDLING,
+    JSON,
+    XML,
+    PARSING,
+    SERIALIZATION,
+
+    ERROR_HANDLING,
+    EXCEPTION_HANDLING,
+    LOGGING,
+    CACHING,
+
+    ASYNC,
+    CONCURRENCY,
+    MULTITHREADING,
+
+    ALGORITHM,
+    DATA_STRUCTURE,
+    UTILITY,
+    HELPER,
+
+    CONFIGURATION,
+    ENVIRONMENT,
+    DEPLOYMENT,
+
+    TESTING,
+    DEBUGGING,
+
+    EMAIL,
+    NOTIFICATION,
+    PAYMENT,
+
+    STORAGE,
+    CLOUD,
+    AWS,
+    DOCKER,
+
+    WEBSOCKET,
+    REAL_TIME,
+
+    FRONTEND,
+    UI,
+    COMPONENT,
+
+    MACHINE_LEARNING,
+    AI,
+
+    REGEX,
+    DATE_TIME,
+    STRING,
+    COLLECTION,
+
+    OTHER
 }

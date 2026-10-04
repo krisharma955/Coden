@@ -4,6 +4,7 @@ import com.k955.Coden.dtos.SuperAdmin.UpdateUserRole;
 import com.k955.Coden.dtos.User.UserProfileResponse;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.User.Role;
+import com.k955.Coden.exception.AccessDeniedException;
 import com.k955.Coden.exception.BadRequestException;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.mapper.UserMapper;
@@ -26,14 +27,20 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final JwtAuthUtil jwtAuthUtil;
 
-    @Override //TODO: replace super admin check with security expressions (NOT OPTIMAL)
+    @Override
     @Transactional
     public UserProfileResponse updateUserRole(UUID userId, UpdateUserRole updateUserRole) {
         UUID sadminId = jwtAuthUtil.getCurrentUserId();
         User sadmin = userRepository.findById(sadminId)
                 .orElseThrow(() -> new ResourceNotFoundException(sadminId.toString(), "User"));
 
-        if(!sadmin.getRole().equals(Role.SUPER_ADMIN)) throw new BadRequestException("Only Super Admins can update roles!");
+        if(!sadmin.getRole().equals(Role.SUPER_ADMIN)) {
+            throw new AccessDeniedException("Only Super Admins can update roles!");
+        }
+
+        if(updateUserRole.role().equals(Role.SUPER_ADMIN)) {
+            throw new BadRequestException("Promoting to Super-Admin is denied!");
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));

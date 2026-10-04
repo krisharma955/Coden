@@ -1,5 +1,6 @@
 package com.k955.Coden.dtos.Snippet;
 
+import com.k955.Coden.dtos.User.UserProfileResponse;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Snippet.Framework;
 import com.k955.Coden.enums.Snippet.Language;
@@ -16,7 +17,7 @@ public record SnippetResponse(
     Language language,
     Framework framework,
     SnippetType snippetType,
-    User createdBy,
+    UserProfileResponse createdBy,
     Instant createdAt
 ) {
 }

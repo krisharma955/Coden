@@ -5,6 +5,9 @@ import com.k955.Coden.dtos.Snippet.SnippetResponse;
 import com.k955.Coden.dtos.Snippet.UpdateSnippetRequest;
 import com.k955.Coden.entity.Snippet;
 import com.k955.Coden.entity.User;
+import com.k955.Coden.enums.User.Role;
+import com.k955.Coden.exception.AccessDeniedException;
+import com.k955.Coden.exception.BadRequestException;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.mapper.SnippetMapper;
 import com.k955.Coden.repository.SnippetRepository;
@@ -13,10 +16,10 @@ import com.k955.Coden.security.JwtAuthUtil;
 import com.k955.Coden.service.SnippetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
@@ -60,10 +63,17 @@ public class SnippetServiceImpl implements SnippetService {
 
     @Override
     @Transactional
-    @PreAuthorize("@security.canEditSnippet(#snippetId)")
     public SnippetResponse updateSnippetById(UUID snippetId, UpdateSnippetRequest updateSnippetRequest) {
+        UUID userId = jwtAuthUtil.getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
+
         Snippet snippet = snippetRepository.findById(snippetId)
                 .orElseThrow(() -> new ResourceNotFoundException(snippetId.toString(), "Snippet"));
+
+        if(!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.SUPER_ADMIN) || snippet.getCreatedBy().getId().equals(userId))) {
+            throw new AccessDeniedException("Only Admins or Creators can edit Snippets");
+        }
 
         if(updateSnippetRequest.title() != null) {
             snippet.setTitle(updateSnippetRequest.title());
@@ -96,10 +106,10 @@ public class SnippetServiceImpl implements SnippetService {
 
     @Override
     @Transactional
-    @PreAuthorize("@security.canDeleteSnippet(#snippetId)")
     public void deleteSnippet(UUID snippetId) {
         Snippet snippet = snippetRepository.findById(snippetId)
                 .orElseThrow(() -> new ResourceNotFoundException(snippetId.toString(), "Snippet"));
+        snippet.setDeletedAt(Instant.now());
         snippetRepository.delete(snippet);
     }
 

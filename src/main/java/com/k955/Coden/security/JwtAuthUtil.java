@@ -1,6 +1,7 @@
 package com.k955.Coden.security;
 
 import com.k955.Coden.entity.User;
+import com.k955.Coden.exception.BadRequestException;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -62,8 +63,12 @@ public class JwtAuthUtil {
     }
 
     public boolean isTokenValid(String token, User user) {
-        String email = extractEmail(token);
-        return (email.equals(user.getEmail())) && (!isTokenExpired(token));
+        try {
+            String email = extractEmail(token);
+            return (email.equals(user.getEmail())) && (!isTokenExpired(token));
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid JWT Token");
+        }
     }
 
     public String getCurrentEmail() {
