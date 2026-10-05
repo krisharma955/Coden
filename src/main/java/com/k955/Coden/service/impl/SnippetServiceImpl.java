@@ -111,9 +111,18 @@ public class SnippetServiceImpl implements SnippetService {
     @Override
     @Transactional
     public void deleteSnippet(UUID snippetId) {
+        UUID userId = jwtAuthUtil.getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
+
+        if(!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.SUPER_ADMIN))) {
+            throw new AccessDeniedException("Only Admins can Delete Snippets");
+        }
+
         Snippet snippet = snippetRepository.findById(snippetId)
                 .orElseThrow(() -> new ResourceNotFoundException(snippetId.toString(), "Snippet"));
         snippet.setDeletedAt(Instant.now());
+
         snippetRepository.delete(snippet);
     }
 

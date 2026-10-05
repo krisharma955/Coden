@@ -16,7 +16,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
-public class SnippetFolderItem {
+public class SnippetFolderItemController {
 
     private final SnippetFolderItemService snippetFolderItemService;
 

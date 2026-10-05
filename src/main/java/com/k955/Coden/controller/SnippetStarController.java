@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/snippet-star")
+@RequestMapping("/api/stars")
 public class SnippetStarController {
 
     private final SnippetStarService snippetStarService;
