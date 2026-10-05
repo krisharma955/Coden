@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-//@Entity
+@Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(
         name = "snippet_stars",
