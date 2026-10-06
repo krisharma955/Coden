@@ -1,21 +1,18 @@
 package com.k955.Coden.specification;
 
-import com.k955.Coden.entity.Snippet;
-import com.k955.Coden.enums.Snippet.Framework;
+import com.k955.Coden.entity.Bundle;
+import com.k955.Coden.enums.Bundle.BundleCategory;
 import com.k955.Coden.enums.Common.Language;
-import com.k955.Coden.enums.Snippet.SnippetStatus;
-import com.k955.Coden.enums.Snippet.SnippetType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SnippetSpecification {
+public class BundleSpecification {
 
-    public static Specification<Snippet> filterBy(
-            Language language, Framework framework, SnippetType snippetType,
-            SnippetStatus snippetStatus, String search
+    public static Specification<Bundle> filterBy(
+            Language language, BundleCategory bundleCategory, String search
     ) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -24,16 +21,8 @@ public class SnippetSpecification {
                 predicates.add(cb.equal(root.get("language"), language));
             }
 
-            if(framework != null) {
-                predicates.add(cb.equal(root.get("framework"), framework));
-            }
-
-            if(snippetType != null) {
-                predicates.add(cb.equal(root.get("snippetType"), snippetType));
-            }
-
-            if(snippetStatus != null) {
-                predicates.add(cb.equal(root.get("snippetStatus"), snippetStatus));
+            if(bundleCategory != null) {
+                predicates.add(cb.equal(root.get("bundleCategory"), bundleCategory));
             }
 
             if(search != null && !search.isBlank()) {

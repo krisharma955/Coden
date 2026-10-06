@@ -1,4 +1,4 @@
-package com.k955.Coden.enums.Snippet;
+package com.k955.Coden.enums.Common;
 
 public enum Language {
     JAVA,

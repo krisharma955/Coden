@@ -1,9 +1,8 @@
 package com.k955.Coden.dtos.Snippet;
 
 import com.k955.Coden.dtos.User.UserProfileResponse;
-import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Snippet.Framework;
-import com.k955.Coden.enums.Snippet.Language;
+import com.k955.Coden.enums.Common.Language;
 import com.k955.Coden.enums.Snippet.SnippetStatus;
 import com.k955.Coden.enums.Snippet.SnippetType;
 

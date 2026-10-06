@@ -2,7 +2,7 @@ package com.k955.Coden.service;
 
 import com.k955.Coden.dtos.Snippet.*;
 import com.k955.Coden.enums.Snippet.Framework;
-import com.k955.Coden.enums.Snippet.Language;
+import com.k955.Coden.enums.Common.Language;
 import com.k955.Coden.enums.Snippet.SnippetStatus;
 import com.k955.Coden.enums.Snippet.SnippetType;
 import jakarta.validation.Valid;

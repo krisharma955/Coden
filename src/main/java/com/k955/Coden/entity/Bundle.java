@@ -1,14 +1,14 @@
 package com.k955.Coden.entity;
 
-import com.k955.Coden.enums.Snippet.Framework;
-import com.k955.Coden.enums.Common.Language;
-import com.k955.Coden.enums.Snippet.SnippetStatus;
-import com.k955.Coden.enums.Snippet.SnippetType;
+import com.k955.Coden.enums.Bundle.BundleCategory;
+import com.k955.Coden.enums.Bundle.BundleStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -18,45 +18,39 @@ import java.util.UUID;
 @Builder
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "snippets")
-public class Snippet {
+@Table(name = "bundles")
+public class Bundle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @Column(nullable = false)
-    String title;
+    @Column(nullable = false, unique = true)
+    String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     String description;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    String code;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    BundleStatus bundleStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    Language language;
-
-    @Enumerated(EnumType.STRING)
-    Framework framework;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    SnippetType snippetType;
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    SnippetStatus snippetStatus = SnippetStatus.PENDING;
+    BundleCategory bundleCategory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     User createdBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewed_by_id")
-    User reviewedBy;
+    @Builder.Default
+    @OneToMany(
+            mappedBy = "bundle",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    List<BundleFile> files = new ArrayList<>();
 
     @Column(nullable = false, updatable = false)
     Instant createdAt;
@@ -64,9 +58,7 @@ public class Snippet {
     @Column(nullable = false)
     Instant updatedAt;
 
-    Instant deletedAt;
-
-    @PrePersist //now jpa sets timestamp before insertion
+    @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
         if(createdAt == null) createdAt = now;
@@ -76,6 +68,16 @@ public class Snippet {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now();
+    }
+
+    public void addFile(BundleFile file) {
+        files.add(file);
+        file.setBundle(this);
+    }
+
+    public void removeFile(BundleFile file) {
+        files.remove(file);
+        file.setBundle(null);
     }
 
 }

@@ -36,4 +36,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(exceptionResponse.status()).body(exceptionResponse);
     }
 
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ExceptionResponse> handleStorageException(StorageException exception) {
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), Instant.now());
+        log.error(exceptionResponse.message());
+        return ResponseEntity.status(exceptionResponse.status()).body(exceptionResponse);
+    }
+
 }

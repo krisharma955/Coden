@@ -1,9 +1,6 @@
 package com.k955.Coden.entity;
 
-import com.k955.Coden.enums.Snippet.Framework;
 import com.k955.Coden.enums.Common.Language;
-import com.k955.Coden.enums.Snippet.SnippetStatus;
-import com.k955.Coden.enums.Snippet.SnippetType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -18,45 +15,45 @@ import java.util.UUID;
 @Builder
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "snippets")
-public class Snippet {
+@Table(
+        name = "bundle_files",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_bundle_file_path",
+                columnNames = {"bundle_id", "file_path"}
+        )
+)
+public class BundleFile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     UUID id;
 
-    @Column(nullable = false)
-    String title;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bundle_id", nullable = false)
+    Bundle bundle;
 
     @Column(nullable = false)
-    String description;
+    String fileName;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    String code;
+    @Column(nullable = false, unique = true)
+    String objectKey;
+
+    @Column(nullable = false, name = "file_path", length = 1000)
+    String filePath;
+
+    @Column(nullable = false)
+    long size;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     Language language;
 
-    @Enumerated(EnumType.STRING)
-    Framework framework;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    SnippetType snippetType;
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    SnippetStatus snippetStatus = SnippetStatus.PENDING;
+    String extension;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id", nullable = false)
-    User createdBy;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reviewed_by_id")
-    User reviewedBy;
+    @JoinColumn(name = "uploaded_by_id", nullable = false)
+    User uploadedBy;
 
     @Column(nullable = false, updatable = false)
     Instant createdAt;
@@ -64,9 +61,7 @@ public class Snippet {
     @Column(nullable = false)
     Instant updatedAt;
 
-    Instant deletedAt;
-
-    @PrePersist //now jpa sets timestamp before insertion
+    @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();
         if(createdAt == null) createdAt = now;
