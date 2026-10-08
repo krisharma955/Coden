@@ -7,6 +7,7 @@ import com.k955.Coden.entity.BundleFile;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Bundle.BundleStatus;
 import com.k955.Coden.enums.Common.Language;
+import com.k955.Coden.enums.Notification.NotificationType;
 import com.k955.Coden.enums.User.Role;
 import com.k955.Coden.exception.AccessDeniedException;
 import com.k955.Coden.exception.BadRequestException;
@@ -17,6 +18,7 @@ import com.k955.Coden.repository.BundleRepository;
 import com.k955.Coden.repository.UserRepository;
 import com.k955.Coden.security.JwtAuthUtil;
 import com.k955.Coden.service.BundleFileService;
+import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -35,6 +37,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BundleFileServiceImpl implements BundleFileService {
 
+    private final NotificationService notificationService;
     private final BundleFileRepository bundleFileRepository;
     private final BundleRepository bundleRepository;
     private final UserRepository userRepository;
@@ -77,6 +80,13 @@ public class BundleFileServiceImpl implements BundleFileService {
                     .language(language)
                     .uploadedBy(user)
                     .build());
+
+            notificationService.notifySuperAdmins(
+                    NotificationType.BUNDLE_FILE_CREATED,
+                    saved.getId(),
+                    "Bundle File Created",
+                    user.getId());
+
             return bundleFileMapper.toBundleFileResponse(saved);
         } catch (RuntimeException e) {
             storageService.delete(objectKey);   // don't leave an orphan in MinIO
@@ -153,6 +163,12 @@ public class BundleFileServiceImpl implements BundleFileService {
         }
 
         BundleFile saved = bundleFileRepository.save(bundleFile);
+
+        notificationService.notifySuperAdmins(
+                NotificationType.BUNDLE_FILE_UPDATED,
+                saved.getId(),
+                "Bundle File Created",
+                user.getId());
 
         return bundleFileMapper.toBundleFileResponse(saved);
     }

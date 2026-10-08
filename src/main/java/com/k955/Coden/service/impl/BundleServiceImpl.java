@@ -8,6 +8,7 @@ import com.k955.Coden.entity.BundleFile;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Bundle.BundleCategory;
 import com.k955.Coden.enums.Bundle.BundleStatus;
+import com.k955.Coden.enums.Notification.NotificationType;
 import com.k955.Coden.enums.User.Role;
 import com.k955.Coden.exception.AccessDeniedException;
 import com.k955.Coden.exception.DataIntegrityViolationException;
@@ -18,6 +19,7 @@ import com.k955.Coden.repository.BundleRepository;
 import com.k955.Coden.repository.UserRepository;
 import com.k955.Coden.security.JwtAuthUtil;
 import com.k955.Coden.service.BundleService;
+import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.service.StorageService;
 import com.k955.Coden.specification.BundleSpecification;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class BundleServiceImpl implements BundleService {
 
+    private final NotificationService notificationService;
     private final BundleRepository bundleRepository;
     private final BundleFileRepository bundleFileRepository;
     private final UserRepository userRepository;
@@ -67,6 +70,12 @@ public class BundleServiceImpl implements BundleService {
                 .createdBy(user)
                 .build();
         Bundle saved = bundleRepository.save(bundle);
+
+        notificationService.notifySuperAdmins(
+                NotificationType.BUNDLE_CREATED,
+                saved.getId(),
+                "Bundle Created",
+                user.getId());
 
         return bundleMapper.toBundleResponse(saved);
     }
@@ -125,6 +134,12 @@ public class BundleServiceImpl implements BundleService {
 
         Bundle saved = bundleRepository.save(bundle);
 
+        notificationService.notifySuperAdmins(
+                NotificationType.BUNDLE_UPDATED,
+                saved.getId(),
+                "Bundle Updated",
+                user.getId());
+
         return bundleMapper.toBundleResponse(saved);
     }
 
@@ -149,6 +164,12 @@ public class BundleServiceImpl implements BundleService {
         List<String> objectKeys = bundleFileRepository.findByBundleId(bundleId).stream()
                 .map(BundleFile::getObjectKey)
                 .toList();
+
+        notificationService.notifySuperAdmins(
+                NotificationType.BUNDLE_DELETED,
+                bundle.getId(),
+                "Bundle Deleted",
+                user.getId());
 
         bundleRepository.delete(bundle);
 

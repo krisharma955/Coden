@@ -3,6 +3,7 @@ package com.k955.Coden.service.impl;
 import com.k955.Coden.dtos.Snippet.*;
 import com.k955.Coden.entity.Snippet;
 import com.k955.Coden.entity.User;
+import com.k955.Coden.enums.Notification.NotificationType;
 import com.k955.Coden.enums.Snippet.Framework;
 import com.k955.Coden.enums.Common.Language;
 import com.k955.Coden.enums.Snippet.SnippetStatus;
@@ -14,6 +15,7 @@ import com.k955.Coden.mapper.SnippetMapper;
 import com.k955.Coden.repository.SnippetRepository;
 import com.k955.Coden.repository.UserRepository;
 import com.k955.Coden.security.JwtAuthUtil;
+import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.service.SnippetService;
 import com.k955.Coden.specification.SnippetSpecification;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SnippetServiceImpl implements SnippetService {
 
+    private final NotificationService notificationService;
     private final SnippetRepository snippetRepository;
     private final UserRepository userRepository;
     private final SnippetMapper snippetMapper;
@@ -53,6 +56,17 @@ public class SnippetServiceImpl implements SnippetService {
                 .createdBy(user)
                 .build();
         Snippet saved = snippetRepository.save(snippet);
+
+        if(user.getRole().equals(Role.USER)) {
+            notificationService.notifyAdmin(
+                    NotificationType.SNIPPET_CREATED,
+                    snippet.getId(), "Snippet Created", userId);
+        }
+        else if(user.getRole().equals(Role.ADMIN)) {
+            notificationService.notifySuperAdmins(
+                    NotificationType.SNIPPET_CREATED,
+                    snippet.getId(), "Snippet Created", userId);
+        }
 
         return snippetMapper.toSnippetResponse(saved);
     }
@@ -144,6 +158,17 @@ public class SnippetServiceImpl implements SnippetService {
         snippet.setReviewedBy(user);
 
         Snippet saved = snippetRepository.save(snippet);
+
+        NotificationType notificationType =
+                updateSnippetStatus.snippetStatus().equals(SnippetStatus.APPROVED)
+                ? NotificationType.SNIPPET_APPROVED : NotificationType.SNIPPET_REJECTED;
+
+        if(user.getRole().equals(Role.USER)) {
+            notificationService.notifyAdmin(notificationType, snippet.getId(), "Snippet Status Updated", userId);
+        }
+        else if(user.getRole().equals(Role.ADMIN)) {
+            notificationService.notifyAdmin(notificationType, snippet.getId(), "Snippet Status Updated", userId);
+        }
 
         return snippetMapper.toSnippetResponse(saved);
     }
