@@ -13,7 +13,7 @@ public record BundleResponse(
         String description,
         BundleStatus bundleStatus,
         BundleCategory bundleCategory,
-        UserProfileResponse user,
+        UserProfileResponse createdBy,
         Instant createdAt
 ) {
 }

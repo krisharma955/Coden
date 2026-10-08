@@ -23,14 +23,13 @@ public class MinioStorageService implements StorageService {
     private String bucket;
 
     @PostConstruct
-    void ensureBucket() throws Exception {
-        if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-        }
+    void ensureBucket() {
+        ensureBucketQuietly();
     }
 
     @Override
     public void upload(String objectKey, MultipartFile file) {
+        ensureBucketQuietly();   // bucket may be missing if MinIO was down at startup
         try (InputStream in = file.getInputStream()) {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucket)
@@ -41,6 +40,17 @@ public class MinioStorageService implements StorageService {
                     .build());
         } catch (Exception e) {
             throw new StorageException("Failed to upload file", e);
+        }
+    }
+
+    private void ensureBucketQuietly() {
+        try {
+            if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+            }
+        } catch (Exception e) {
+            // don't prevent app startup when MinIO is unreachable; putObject surfaces the real error
+            log.warn("Could not ensure bucket '{}'", bucket, e);
         }
     }
 

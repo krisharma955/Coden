@@ -10,6 +10,7 @@ import java.util.UUID;
 public record BundleFileResponse(
         UUID id,
         String fileName,
+        String filePath,
         long size,
         Language language,
         String extension,

@@ -4,7 +4,6 @@ import com.k955.Coden.dtos.Bundle.BundleRequest;
 import com.k955.Coden.dtos.Bundle.BundleResponse;
 import com.k955.Coden.dtos.Bundle.UpdateBundleRequest;
 import com.k955.Coden.enums.Bundle.BundleCategory;
-import com.k955.Coden.enums.Common.Language;
 import com.k955.Coden.service.BundleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +36,11 @@ public class BundleController {
 
     @GetMapping
     public ResponseEntity<Page<BundleResponse>> getBundles(
-            @RequestParam(required = false) Language language,
             @RequestParam(required = false) BundleCategory bundleCategory,
             @RequestParam(required = false) String search,
             @PageableDefault(size = 5, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(bundleService.getBundles(language, bundleCategory, search, pageable));
+        return ResponseEntity.ok(bundleService.getBundles(bundleCategory, search, pageable));
     }
 
     @PatchMapping("/{bundleId}")

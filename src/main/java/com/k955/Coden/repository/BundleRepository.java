@@ -9,4 +9,7 @@ import java.util.UUID;
 
 @Repository
 public interface BundleRepository extends JpaRepository<Bundle, UUID>, JpaSpecificationExecutor<Bundle> {
+
+    boolean existsByName(String name);
+
 }

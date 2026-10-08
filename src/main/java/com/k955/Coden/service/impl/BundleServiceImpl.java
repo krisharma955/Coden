@@ -4,19 +4,21 @@ import com.k955.Coden.dtos.Bundle.BundleRequest;
 import com.k955.Coden.dtos.Bundle.BundleResponse;
 import com.k955.Coden.dtos.Bundle.UpdateBundleRequest;
 import com.k955.Coden.entity.Bundle;
+import com.k955.Coden.entity.BundleFile;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Bundle.BundleCategory;
 import com.k955.Coden.enums.Bundle.BundleStatus;
-import com.k955.Coden.enums.Common.Language;
 import com.k955.Coden.enums.User.Role;
 import com.k955.Coden.exception.AccessDeniedException;
-import com.k955.Coden.exception.BadRequestException;
+import com.k955.Coden.exception.DataIntegrityViolationException;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.mapper.BundleMapper;
+import com.k955.Coden.repository.BundleFileRepository;
 import com.k955.Coden.repository.BundleRepository;
 import com.k955.Coden.repository.UserRepository;
 import com.k955.Coden.security.JwtAuthUtil;
 import com.k955.Coden.service.BundleService;
+import com.k955.Coden.service.StorageService;
 import com.k955.Coden.specification.BundleSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,7 +28,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -34,9 +39,11 @@ import java.util.UUID;
 public class BundleServiceImpl implements BundleService {
 
     private final BundleRepository bundleRepository;
+    private final BundleFileRepository bundleFileRepository;
     private final UserRepository userRepository;
     private final JwtAuthUtil jwtAuthUtil;
     private final BundleMapper bundleMapper;
+    private final StorageService storageService;
 
     @Override
     @Transactional
@@ -46,8 +53,11 @@ public class BundleServiceImpl implements BundleService {
                 .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
 
         if(!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.SUPER_ADMIN))) {
-            throw new BadRequestException("Only Admins can create Bundles");
+            throw new AccessDeniedException("Only Admins can create Bundles");
         }
+
+        boolean check = bundleRepository.existsByName(bundleRequest.name());
+        if(check) throw new DataIntegrityViolationException("A bundle with name " + bundleRequest.name() + " already exists");
 
         Bundle bundle = Bundle.builder()
                 .name(bundleRequest.name())
@@ -64,17 +74,15 @@ public class BundleServiceImpl implements BundleService {
     @Override
     @Transactional(readOnly = true)
     public BundleResponse getBundleById(UUID bundleId) {
-        getVisibleBundle(bundleId);
-        Bundle bundle = bundleRepository.findById(bundleId)
-                .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
+        Bundle bundle = getVisibleBundle(bundleId);
         return bundleMapper.toBundleResponse(bundle);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<BundleResponse> getBundles(Language language, BundleCategory bundleCategory, String search, Pageable pageable) {
+    public Page<BundleResponse> getBundles(BundleCategory bundleCategory, String search, Pageable pageable) {
         return bundleRepository
-                .findAll(BundleSpecification.filterBy(language, bundleCategory, search), pageable)
+                .findAll(BundleSpecification.filterBy(bundleCategory, search, isAdminCaller()), pageable)
                 .map(bundleMapper::toBundleResponse);
     }
 
@@ -86,7 +94,7 @@ public class BundleServiceImpl implements BundleService {
                 .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
 
         if(!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.SUPER_ADMIN))) {
-            throw new BadRequestException("Only Admins can update Bundles");
+            throw new AccessDeniedException("Only Admins can update Bundles");
         }
 
         Bundle bundle = bundleRepository.findById(bundleId)
@@ -96,7 +104,10 @@ public class BundleServiceImpl implements BundleService {
             throw new AccessDeniedException("Only the creator/super-admin can update a Bundle");
         }
 
-        if(updateBundleRequest.name() != null) {
+        if(updateBundleRequest.name() != null && !updateBundleRequest.name().equals(bundle.getName())) {
+            if(bundleRepository.existsByName(updateBundleRequest.name())) {
+                throw new DataIntegrityViolationException("A bundle with name " + updateBundleRequest.name() + " already exists");
+            }
             bundle.setName(updateBundleRequest.name());
         }
 
@@ -117,7 +128,6 @@ public class BundleServiceImpl implements BundleService {
         return bundleMapper.toBundleResponse(saved);
     }
 
-    // TODO: once MinIO is wired in, delete the objects for bundle.getFiles()
     @Override
     @Transactional
     public void deleteBundle(UUID bundleId) {
@@ -126,7 +136,7 @@ public class BundleServiceImpl implements BundleService {
                 .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
 
         if(!(user.getRole().equals(Role.ADMIN) || user.getRole().equals(Role.SUPER_ADMIN))) {
-            throw new BadRequestException("Only Admins can delete Bundles");
+            throw new AccessDeniedException("Only Admins can delete Bundles");
         }
 
         Bundle bundle = bundleRepository.findById(bundleId)
@@ -136,12 +146,23 @@ public class BundleServiceImpl implements BundleService {
             throw new AccessDeniedException("Only the creator/super-admin can delete a Bundle");
         }
 
+        List<String> objectKeys = bundleFileRepository.findByBundleId(bundleId).stream()
+                .map(BundleFile::getObjectKey)
+                .toList();
+
         bundleRepository.delete(bundle);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                objectKeys.forEach(storageService::delete);
+            }
+        });
     }
 
     /// Utiltiy Methods
 
-    private void getVisibleBundle(UUID bundleId) {
+    private Bundle getVisibleBundle(UUID bundleId) {
         Bundle bundle = bundleRepository.findById(bundleId)
                 .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
 
@@ -149,6 +170,7 @@ public class BundleServiceImpl implements BundleService {
         if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !isAdminCaller()) {
             throw new ResourceNotFoundException(bundleId.toString(), "Bundle");
         }
+        return bundle;
     }
 
     private boolean isAdminCaller() {

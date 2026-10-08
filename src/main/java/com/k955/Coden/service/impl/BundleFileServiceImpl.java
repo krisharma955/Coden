@@ -87,7 +87,7 @@ public class BundleFileServiceImpl implements BundleFileService {
     @Override
     @Transactional(readOnly = true)
     public BundleFileResponse getBundleFileById(UUID bundleId, UUID fileId) {
-        getVisibleBundle(fileId);
+        getVisibleBundle(bundleId);
         BundleFile bundleFile = bundleFileRepository.findByIdAndBundleId(fileId, bundleId)
                 .orElseThrow(() -> new ResourceNotFoundException(fileId.toString(), "BundleFile"));
         return bundleFileMapper.toBundleFileResponse(bundleFile);
@@ -97,8 +97,6 @@ public class BundleFileServiceImpl implements BundleFileService {
     @Transactional(readOnly = true)
     public List<BundleFileResponse> getBundleFile(UUID bundleId) {
         getVisibleBundle(bundleId);
-        Bundle bundle = bundleRepository.findById(bundleId)
-                .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
         return bundleFileRepository.findByBundleId(bundleId).stream()
                 .map(bundleFileMapper::toBundleFileResponse)
                 .toList();
@@ -127,6 +125,28 @@ public class BundleFileServiceImpl implements BundleFileService {
             bundleFile.setExtension(extractExtension(fileName));
         }
 
+        if (updateBundleFileRequest.fileName() != null) {
+            String name = updateBundleFileRequest.fileName().trim();
+            if (name.isEmpty() || name.contains("/") || name.contains("\\") || name.contains("..")) {
+                throw new BadRequestException("Invalid file name");
+            }
+            if (name.length() > 150) {
+                throw new BadRequestException("File name is too long");
+            }
+            bundleFile.setFileName(name);
+            bundleFile.setExtension(extractExtension(name));
+        }
+
+        if (updateBundleFileRequest.extension() != null) {
+            String extension = updateBundleFileRequest.extension().trim().toLowerCase();
+            if (!extension.isEmpty() && !extension.startsWith(".")) {
+                extension = "." + extension;
+            }
+            if (extension.length() > 20) {
+                throw new BadRequestException("Invalid extension");
+            }
+            bundleFile.setExtension(extension);
+        }
 
         if(updateBundleFileRequest.language() != null) {
             bundleFile.setLanguage(updateBundleFileRequest.language());
@@ -173,6 +193,15 @@ public class BundleFileServiceImpl implements BundleFileService {
         if (cleanPath.isEmpty() || cleanPath.startsWith("/") || cleanPath.contains("..") || cleanPath.contains("\\")) {
             throw new BadRequestException("Invalid file path");
         }
+        if (cleanPath.length() > 1000) {
+            throw new BadRequestException("Invalid file path");
+        }
+        if (extractFileName(cleanPath).length() > 150) {   // object_key VARCHAR(255) = 82 + fileName
+            throw new BadRequestException("File name is too long");
+        }
+        if (extractExtension(extractFileName(cleanPath)).length() > 20) {
+            throw new BadRequestException("Invalid extension");
+        }
         return cleanPath;
     }
 
@@ -193,7 +222,7 @@ public class BundleFileServiceImpl implements BundleFileService {
         }
     }
 
-    private Bundle getVisibleBundle(UUID bundleId) {
+    private void getVisibleBundle(UUID bundleId) {
         Bundle bundle = bundleRepository.findById(bundleId)
                 .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
 
@@ -201,7 +230,6 @@ public class BundleFileServiceImpl implements BundleFileService {
         if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !isAdminCaller()) {
             throw new ResourceNotFoundException(bundleId.toString(), "Bundle");
         }
-        return bundle;
     }
 
     private boolean isAdminCaller() {
