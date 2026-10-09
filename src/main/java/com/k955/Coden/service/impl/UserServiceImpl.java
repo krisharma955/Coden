@@ -51,4 +51,45 @@ public class UserServiceImpl implements UserService {
         return userMapper.toUserProfileResponse(saved);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserByEmail(String email) {
+        UUID sadminId = jwtAuthUtil.getCurrentUserId();
+        User sadmin = userRepository.findById(sadminId)
+                .orElseThrow(() -> new ResourceNotFoundException(sadminId.toString(), "User"));
+
+        if(!sadmin.getRole().equals(Role.SUPER_ADMIN)) {
+            throw new AccessDeniedException("Only Super Admins can look up users!");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(email, "User"));
+
+        return userMapper.toUserProfileResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserProfileResponse updateUserRoleByEmail(String email, UpdateUserRole updateUserRole) {
+        UUID sadminId = jwtAuthUtil.getCurrentUserId();
+        User sadmin = userRepository.findById(sadminId)
+                .orElseThrow(() -> new ResourceNotFoundException(sadminId.toString(), "User"));
+
+        if(!sadmin.getRole().equals(Role.SUPER_ADMIN)) {
+            throw new AccessDeniedException("Only Super Admins can update roles!");
+        }
+
+        if(updateUserRole.role().equals(Role.SUPER_ADMIN)) {
+            throw new BadRequestException("Promoting to Super-Admin is denied!");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(email, "User"));
+
+        user.setRole(updateUserRole.role());
+        User saved = userRepository.save(user);
+
+        return userMapper.toUserProfileResponse(saved);
+    }
+
 }

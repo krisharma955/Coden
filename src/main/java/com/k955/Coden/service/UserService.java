@@ -10,4 +10,8 @@ public interface UserService {
 
     UserProfileResponse updateUserRole(UUID userId, @Valid UpdateUserRole updateUserRole);
 
+    UserProfileResponse getUserByEmail(String email);
+
+    UserProfileResponse updateUserRoleByEmail(String email, @Valid UpdateUserRole updateUserRole);
+
 }
