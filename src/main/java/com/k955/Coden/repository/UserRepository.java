@@ -17,6 +17,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByUsername(String username);
+
+    Optional<User> findByGithubId(Long githubId);
+
     boolean existsByEmail(@NotBlank String email);
 
     List<User> findByRole(Role role);

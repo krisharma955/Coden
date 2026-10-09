@@ -47,6 +47,13 @@ public class User {
 
     Instant deletedAt;
 
+    @Column(unique = true)
+    Long githubId;
+
+    String avatarUrl;
+
+    String profileUrl;
+
     @PrePersist
     protected void onCreate() {
         Instant now = Instant.now();

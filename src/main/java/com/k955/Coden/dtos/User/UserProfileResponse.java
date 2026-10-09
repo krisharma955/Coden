@@ -11,6 +11,8 @@ public record UserProfileResponse(
         String username,
         String email,
         Role role,
+        String avatarUrl,
+        String profileUrl,
         Instant createdAt
 ) {
 }

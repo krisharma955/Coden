@@ -3,6 +3,7 @@ package com.k955.Coden.security;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.repository.UserRepository;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,9 +41,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = requestHeader.substring(7);
 
-        String email = jwtAuthUtil.extractEmail(token);
+        String email;
+        try {
+            email = jwtAuthUtil.extractEmail(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        if(email == null || SecurityContextHolder.getContext().getAuthentication() == null) {
+        if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
             User user = userRepository.findByEmail(email)
