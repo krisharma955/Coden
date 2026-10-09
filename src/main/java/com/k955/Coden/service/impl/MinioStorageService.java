@@ -43,6 +43,18 @@ public class MinioStorageService implements StorageService {
         }
     }
 
+    @Override
+    public InputStream download(String objectKey) {
+        try {
+            return minioClient.getObject(GetObjectArgs.builder()
+                    .bucket(bucket)
+                    .object(objectKey)
+                    .build());
+        } catch (Exception e) {
+            throw new StorageException("Failed to download file " + objectKey, e);
+        }
+    }
+
     private void ensureBucketQuietly() {
         try {
             if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {

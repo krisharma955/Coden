@@ -5,6 +5,7 @@ import com.k955.Coden.dtos.Bundle.BundleResponse;
 import com.k955.Coden.dtos.Bundle.UpdateBundleRequest;
 import com.k955.Coden.enums.Bundle.BundleCategory;
 import com.k955.Coden.service.BundleService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -48,6 +49,11 @@ public class BundleController {
             @PathVariable UUID bundleId, @RequestBody UpdateBundleRequest updateBundleRequest
     ) {
         return ResponseEntity.ok(bundleService.updateBundleById(bundleId, updateBundleRequest));
+    }
+
+    @GetMapping("/{bundleId}/download")
+    public void downloadBundle(@PathVariable UUID bundleId, HttpServletResponse response) {
+        bundleService.downloadBundleAsZip(bundleId, response);
     }
 
     @DeleteMapping("/{bundleId}")

@@ -11,8 +11,10 @@ import com.k955.Coden.enums.Bundle.BundleStatus;
 import com.k955.Coden.enums.Notification.NotificationType;
 import com.k955.Coden.enums.User.Role;
 import com.k955.Coden.exception.AccessDeniedException;
+import com.k955.Coden.exception.BadRequestException;
 import com.k955.Coden.exception.DataIntegrityViolationException;
 import com.k955.Coden.exception.ResourceNotFoundException;
+import com.k955.Coden.exception.StorageException;
 import com.k955.Coden.mapper.BundleMapper;
 import com.k955.Coden.repository.BundleFileRepository;
 import com.k955.Coden.repository.BundleRepository;
@@ -22,9 +24,13 @@ import com.k955.Coden.service.BundleService;
 import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.service.StorageService;
 import com.k955.Coden.specification.BundleSpecification;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,9 +39,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BundleServiceImpl implements BundleService {
@@ -179,6 +191,39 @@ public class BundleServiceImpl implements BundleService {
                 objectKeys.forEach(storageService::delete);
             }
         });
+    }
+
+    @Override
+    public void downloadBundleAsZip(UUID bundleId, HttpServletResponse response) {
+        Bundle bundle = getVisibleBundle(bundleId);
+
+        List<BundleFile> files = bundleFileRepository.findByBundleId(bundleId).stream()
+                .sorted(Comparator.comparing(BundleFile::getFilePath))
+                .toList();
+
+        if (files.isEmpty()) {
+            throw new BadRequestException("Bundle has no files");
+        }
+
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition
+                .attachment()
+                .filename(bundle.getName() + ".zip")
+                .build()
+                .toString());
+
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(response.getOutputStream())) {
+            for (BundleFile file : files) {
+                zipOutputStream.putNextEntry(new ZipEntry(file.getFilePath()));
+                try (InputStream in = storageService.download(file.getObjectKey())) {
+                    in.transferTo(zipOutputStream);
+                }
+                zipOutputStream.closeEntry();
+            }
+        } catch (IOException e) {
+            log.error("Failed to build zip for bundle {}", bundleId, e);
+            throw new StorageException("Failed to build download zip", e);
+        }
     }
 
     /// Utiltiy Methods

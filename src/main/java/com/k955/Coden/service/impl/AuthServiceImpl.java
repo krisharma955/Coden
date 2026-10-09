@@ -3,6 +3,7 @@ package com.k955.Coden.service.impl;
 import com.k955.Coden.dtos.Auth.AuthResponse;
 import com.k955.Coden.dtos.Auth.LoginRequest;
 import com.k955.Coden.dtos.Auth.SignupRequest;
+import com.k955.Coden.dtos.User.UserProfileResponse;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.exception.BadRequestException;
 import com.k955.Coden.exception.ResourceNotFoundException;
@@ -67,6 +68,13 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtAuthUtil.generateAccessToken(user);
 
         return new AuthResponse(token, userMapper.toUserProfileResponse(user));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileResponse getCurrentUser() {
+        User user = jwtAuthUtil.getCurrentUser();
+        return userMapper.toUserProfileResponse(user);
     }
 
 }

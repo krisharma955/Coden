@@ -7,6 +7,7 @@ import com.k955.Coden.enums.Bundle.BundleCategory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
 
 public interface BundleService {
@@ -20,5 +21,7 @@ public interface BundleService {
     BundleResponse updateBundleById(UUID bundleId, UpdateBundleRequest updateBundleRequest);
 
     void deleteBundle(UUID bundleId);
+
+    void downloadBundleAsZip(UUID bundleId, HttpServletResponse response);
 
 }
