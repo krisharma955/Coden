@@ -167,7 +167,7 @@ public class BundleFileServiceImpl implements BundleFileService {
         notificationService.notifySuperAdmins(
                 NotificationType.BUNDLE_FILE_UPDATED,
                 saved.getId(),
-                "Bundle File Created",
+                "Bundle File Updated",
                 user.getId());
 
         return bundleFileMapper.toBundleFileResponse(saved);

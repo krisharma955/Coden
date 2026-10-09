@@ -57,15 +57,18 @@ public class SnippetServiceImpl implements SnippetService {
                 .build();
         Snippet saved = snippetRepository.save(snippet);
 
-        if(user.getRole().equals(Role.USER)) {
-            notificationService.notifyAdmin(
-                    NotificationType.SNIPPET_CREATED,
-                    snippet.getId(), "Snippet Created", userId);
-        }
-        else if(user.getRole().equals(Role.ADMIN)) {
-            notificationService.notifySuperAdmins(
-                    NotificationType.SNIPPET_CREATED,
-                    snippet.getId(), "Snippet Created", userId);
+        boolean isSuperAdmin = user.getRole().equals(Role.SUPER_ADMIN);
+
+        if(!isSuperAdmin) {
+            if (user.getRole().equals(Role.USER)) {
+                notificationService.notifyAdmins(
+                        NotificationType.SNIPPET_CREATED,
+                        snippet.getId(), "Snippet Created", userId);
+            } else if (user.getRole().equals(Role.ADMIN)) {
+                notificationService.notifySuperAdmins(
+                        NotificationType.SNIPPET_CREATED,
+                        snippet.getId(), "Snippet Created", userId);
+            }
         }
 
         return snippetMapper.toSnippetResponse(saved);
@@ -154,23 +157,32 @@ public class SnippetServiceImpl implements SnippetService {
         Snippet snippet = snippetRepository.findById(snippetId)
                 .orElseThrow(() -> new ResourceNotFoundException(snippetId.toString(), "Snippet"));
 
-        snippet.setSnippetStatus(updateSnippetStatus.snippetStatus());
-        snippet.setReviewedBy(user);
+        boolean duplicateChange = snippet.getSnippetStatus().equals(updateSnippetStatus.snippetStatus());
 
-        Snippet saved = snippetRepository.save(snippet);
+        if(!duplicateChange) {
+            snippet.setSnippetStatus(updateSnippetStatus.snippetStatus());
+            snippet.setReviewedBy(user);
 
-        NotificationType notificationType =
-                updateSnippetStatus.snippetStatus().equals(SnippetStatus.APPROVED)
-                ? NotificationType.SNIPPET_APPROVED : NotificationType.SNIPPET_REJECTED;
+            Snippet saved = snippetRepository.save(snippet);
 
-        if(user.getRole().equals(Role.USER)) {
-            notificationService.notifyAdmin(notificationType, snippet.getId(), "Snippet Status Updated", userId);
+            if (snippet.getSnippetStatus().equals(SnippetStatus.APPROVED) || snippet.getSnippetStatus().equals(SnippetStatus.REJECTED)) {
+                NotificationType notificationType =
+                        updateSnippetStatus.snippetStatus().equals(SnippetStatus.APPROVED)
+                                ? NotificationType.SNIPPET_APPROVED : NotificationType.SNIPPET_REJECTED;
+
+                boolean isSelfReview = snippet.getCreatedBy().getId().equals(user.getId());
+
+                if (!isSelfReview) {
+                    notificationService.notifyUser(notificationType, snippetId, "Snippet Status Updated", userId, snippet.getCreatedBy().getId());
+                }
+
+                notificationService.notifySuperAdmins(notificationType, snippetId, "Snippet Status Updated", userId);
+            }
+
+            return snippetMapper.toSnippetResponse(saved);
         }
-        else if(user.getRole().equals(Role.ADMIN)) {
-            notificationService.notifyAdmin(notificationType, snippet.getId(), "Snippet Status Updated", userId);
-        }
 
-        return snippetMapper.toSnippetResponse(saved);
+        return snippetMapper.toSnippetResponse(snippet);
     }
 
     @Override

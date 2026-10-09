@@ -4,10 +4,12 @@ import com.k955.Coden.dtos.Notification.NotificationResponse;
 import com.k955.Coden.entity.Notification;
 import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Notification.NotificationType;
+import com.k955.Coden.enums.User.Role;
 import com.k955.Coden.exception.AccessDeniedException;
 import com.k955.Coden.exception.ResourceNotFoundException;
 import com.k955.Coden.mapper.NotificationMapper;
 import com.k955.Coden.repository.NotificationRepository;
+import com.k955.Coden.repository.UserRepository;
 import com.k955.Coden.security.JwtAuthUtil;
 import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.specification.NotificationSpecification;
@@ -28,6 +30,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final UserRepository userRepository;
     private final JwtAuthUtil jwtAuthUtil;
 
     @Override
@@ -48,8 +51,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Override //TODO: Security Check
     @Transactional(readOnly = true)
     public Page<NotificationResponse> getMyNotifications(boolean isRead, Pageable pageable) {
+        UUID userId = jwtAuthUtil.getCurrentUserId();
         return notificationRepository
-                .findAll(NotificationSpecification.filterBy(isRead), pageable)
+                .findAll(NotificationSpecification.filterBy(isRead, userId), pageable)
                 .map(notificationMapper::toNotificationResponse);
     }
 
@@ -102,13 +106,75 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void notifyAdmin(NotificationType notificationType, UUID referenceId, String message, UUID actorId) {
+    @Transactional
+    public void notifyAdmins(NotificationType notificationType, UUID referenceId, String message, UUID actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException(actorId.toString(), "Actor"));
 
+        List<User> admins = userRepository.findByRole(Role.ADMIN);
+        for(User user : admins) {
+            if(user.getId().equals(actorId)) continue;
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .notificationType(notificationType)
+                    .message(message)
+                    .referenceId(referenceId)
+                    .actor(actor)
+                    .build();
+            Notification saved = notificationRepository.save(notification);
+        }
+
+        List<User> superAdmins = userRepository.findByRole(Role.SUPER_ADMIN);
+        for(User user : superAdmins) {
+            if(user.getId().equals(actorId)) continue;
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .notificationType(notificationType)
+                    .message(message)
+                    .referenceId(referenceId)
+                    .actor(actor)
+                    .build();
+            Notification saved = notificationRepository.save(notification);
+        }
     }
 
     @Override
+    @Transactional
     public void notifySuperAdmins(NotificationType notificationType, UUID referenceId, String message, UUID actorId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException(actorId.toString(), "Actor"));
 
+        List<User> superAdmins = userRepository.findByRole(Role.SUPER_ADMIN);
+        for(User user : superAdmins) {
+            if(user.getId().equals(actorId)) continue;
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .notificationType(notificationType)
+                    .message(message)
+                    .referenceId(referenceId)
+                    .actor(actor)
+                    .build();
+            Notification saved = notificationRepository.save(notification);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void notifyUser(NotificationType notificationType, UUID referenceId, String message, UUID actorId, UUID recipientId) {
+        User actor = userRepository.findById(actorId)
+                .orElseThrow(() -> new ResourceNotFoundException(actorId.toString(), "Actor"));
+
+        User recipient = userRepository.findById(recipientId)
+                .orElseThrow(() -> new ResourceNotFoundException(recipientId.toString(), "Recipient"));
+
+        Notification notification = Notification.builder()
+                .user(recipient)
+                .notificationType(notificationType)
+                .message(message)
+                .referenceId(referenceId)
+                .actor(actor)
+                .build();
+        Notification saved = notificationRepository.save(notification);
     }
 
 }

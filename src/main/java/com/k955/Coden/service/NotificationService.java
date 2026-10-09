@@ -1,7 +1,6 @@
 package com.k955.Coden.service;
 
 import com.k955.Coden.dtos.Notification.NotificationResponse;
-import com.k955.Coden.entity.User;
 import com.k955.Coden.enums.Notification.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,8 +19,10 @@ public interface NotificationService {
 
     void readAllNotifications();
 
-    void notifyAdmin(NotificationType notificationType, UUID referenceId, String message, UUID actorId);
+    void notifyAdmins(NotificationType notificationType, UUID referenceId, String message, UUID actorId);
 
     void notifySuperAdmins(NotificationType notificationType, UUID referenceId, String message, UUID actorId);
+
+    void notifyUser(NotificationType notificationType, UUID referenceId, String message, UUID actorId, UUID recipientId);
 
 }

@@ -6,14 +6,17 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class NotificationSpecification {
 
-    public static Specification<Notification> filterBy(boolean isRead) {
+    public static Specification<Notification> filterBy(boolean isRead, UUID userId) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("isRead"), isRead));
+
+            predicates.add(cb.equal(root.get("user").get("id"), userId));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
