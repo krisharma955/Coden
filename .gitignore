@@ -6,6 +6,9 @@ target/
 
 docker-compose.yaml
 src/main/resources/application.yaml
+.env
+.env.*
+!.env.example
 
 ### STS ###
 .apt_generated

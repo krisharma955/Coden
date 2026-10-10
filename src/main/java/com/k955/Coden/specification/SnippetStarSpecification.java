@@ -17,8 +17,8 @@ public class SnippetStarSpecification {
                 String pattern = "%" + search.toLowerCase() + "%";
                 predicates.add(
                         cb.or(
-                                cb.like(cb.lower(root.get("Snippet").get("title")), pattern),
-                                cb.like(cb.lower(root.get("Snippet").get("description")), pattern)
+                                cb.like(cb.lower(root.get("snippet").get("title")), pattern),
+                                cb.like(cb.lower(root.get("snippet").get("description")), pattern)
                         )
                 );
             }

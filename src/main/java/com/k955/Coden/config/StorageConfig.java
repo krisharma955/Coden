@@ -19,11 +19,15 @@ public class StorageConfig {
     @Value("${minio.secret-key}")
     private String secretKey;
 
+    @Value("${minio.region:us-east-1}")
+    private String region;
+
     @Bean
     public MinioClient minioClient() {
         return MinioClient.builder()
                 .endpoint(url)
                 .credentials(accessKey, secretKey)
+                .region(region)
                 .build();
     }
 
