@@ -65,7 +65,7 @@ public class BundleFileServiceImpl implements BundleFileService {
 
         String fileName = extractFileName(cleanPath);
 
-        String objectKey = "bundles/" + bundleId + "/" + UUID.randomUUID() + "-" + fileName;
+        String objectKey = bundleId + "/" + UUID.randomUUID() + "-" + fileName;
 
         storageService.upload(objectKey, file);
 
@@ -89,7 +89,7 @@ public class BundleFileServiceImpl implements BundleFileService {
 
             return bundleFileMapper.toBundleFileResponse(saved);
         } catch (RuntimeException e) {
-            storageService.delete(objectKey);   // don't leave an orphan in MinIO
+            storageService.delete(objectKey);   // don't leave an orphan in R2
             throw e;
         }
     }
@@ -212,7 +212,7 @@ public class BundleFileServiceImpl implements BundleFileService {
         if (cleanPath.length() > 1000) {
             throw new BadRequestException("Invalid file path");
         }
-        if (extractFileName(cleanPath).length() > 150) {   // object_key VARCHAR(255) = 82 + fileName
+        if (extractFileName(cleanPath).length() > 150) {   // object_key VARCHAR(255) = 74 + fileName
             throw new BadRequestException("File name is too long");
         }
         if (extractExtension(extractFileName(cleanPath)).length() > 20) {
