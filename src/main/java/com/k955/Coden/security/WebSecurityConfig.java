@@ -35,6 +35,7 @@ public class WebSecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**", "/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/health-check").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
