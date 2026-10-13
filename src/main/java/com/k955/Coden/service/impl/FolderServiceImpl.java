@@ -38,7 +38,7 @@ public class FolderServiceImpl implements FolderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
 
-        boolean check = folderRepository.existsByName(folderRequest.name());
+        boolean check = folderRepository.existsByNameAndUserId(folderRequest.name(), userId);
         if(check) throw new BadRequestException("A folder with name: " + folderRequest.name() + " already exists");
 
         Folder folder = Folder.builder()
@@ -67,8 +67,9 @@ public class FolderServiceImpl implements FolderService {
     @Override
     @Transactional(readOnly = true)
     public Page<FolderResponse> getFolders(String search, Pageable pageable) {
+        UUID userId = jwtAuthUtil.getCurrentUserId();
         return folderRepository
-                .findAll(FolderSpecification.filterBy(search), pageable)
+                .findAll(FolderSpecification.filterBy(search, userId), pageable)
                 .map(folderMapper::toFolderResponse);
     }
 
@@ -83,7 +84,12 @@ public class FolderServiceImpl implements FolderService {
         if(!folder.getUser().getId().equals(userId)) throw new AccessDeniedException("You can only access your folders");
 
         if(updateFolderRequest.name() != null && !updateFolderRequest.name().isBlank()) {
-            folder.setName(updateFolderRequest.name());
+            String newName = updateFolderRequest.name();
+            if(!newName.equals(folder.getName())
+                    && folderRepository.existsByNameAndUserId(newName, userId)) {
+                throw new BadRequestException("A folder with name: " + newName + " already exists");
+            }
+            folder.setName(newName);
         }
 
         if(updateFolderRequest.description() != null && !updateFolderRequest.description().isBlank()) {

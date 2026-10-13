@@ -79,6 +79,18 @@ public class SnippetServiceImpl implements SnippetService {
     public SnippetResponse getSnippetById(UUID snippetId) {
         Snippet snippet = snippetRepository.findById(snippetId)
                 .orElseThrow(() -> new ResourceNotFoundException(snippetId.toString(), "Snippet"));
+
+        if(!snippet.getSnippetStatus().equals(SnippetStatus.APPROVED)) {
+            boolean isAdmin = jwtAuthUtil.isAdminCaller();
+            UUID userId = jwtAuthUtil.getCurrentUserIdOrNull();
+            boolean isCreator = userId != null && snippet.getCreatedBy().getId().equals(userId);
+
+            // Hide non-approved snippets from everyone except admins and the creator
+            if(!isAdmin && !isCreator) {
+                throw new ResourceNotFoundException(snippetId.toString(), "Snippet");
+            }
+        }
+
         return snippetMapper.toSnippetResponse(snippet);
     }
 
@@ -190,13 +202,9 @@ public class SnippetServiceImpl implements SnippetService {
             Language language, Framework framework, SnippetType snippetType,
             SnippetStatus snippetStatus, String search, Pageable pageable
     ) {
-        UUID userId = jwtAuthUtil.getCurrentUserId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException(userId.toString(), "User"));
+        boolean isAdmin = jwtAuthUtil.isAdminCaller();
 
-       boolean isAdmin = user.getRole().equals(Role.SUPER_ADMIN) || user.getRole().equals(Role.ADMIN);
-
-       SnippetStatus effectiveStatus = isAdmin ? snippetStatus : SnippetStatus.APPROVED;
+        SnippetStatus effectiveStatus = isAdmin ? snippetStatus : SnippetStatus.APPROVED;
 
         return snippetRepository.findAll(
                 SnippetSpecification.filterBy(

@@ -56,8 +56,9 @@ public class SnippetStarServiceImpl implements SnippetStarService {
     @Override
     @Transactional(readOnly = true)
     public Page<SnippetStarResponse> getStarredSnippets(String search, Pageable pageable) {
+        UUID userId = jwtAuthUtil.getCurrentUserId();
         return snippetStarRepository
-                .findAll(SnippetStarSpecification.filterBy(search), pageable)
+                .findAll(SnippetStarSpecification.filterBy(search, userId), pageable)
                 .map(snippetStarMapper::toSnippetStarResponse);
     }
 

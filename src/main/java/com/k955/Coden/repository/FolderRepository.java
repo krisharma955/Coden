@@ -11,6 +11,6 @@ import java.util.UUID;
 @Repository
 public interface FolderRepository extends JpaRepository<Folder, UUID>, JpaSpecificationExecutor<Folder> {
 
-    boolean existsByName(@NotBlank String name);
+    boolean existsByNameAndUserId(@NotBlank String name, UUID userId);
 
 }

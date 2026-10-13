@@ -21,9 +21,6 @@ import com.k955.Coden.service.BundleFileService;
 import com.k955.Coden.service.NotificationService;
 import com.k955.Coden.service.StorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -243,19 +240,9 @@ public class BundleFileServiceImpl implements BundleFileService {
                 .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
 
         // non-admins only see PUBLISHED bundles; to them a draft simply doesn't exist
-        if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !isAdminCaller()) {
+        if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !jwtAuthUtil.isAdminCaller()) {
             throw new ResourceNotFoundException(bundleId.toString(), "Bundle");
         }
-    }
-
-    private boolean isAdminCaller() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return false;
-        }
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(a -> a.equals("ROLE_ADMIN") || a.equals("ROLE_SUPER_ADMIN"));
     }
 
 }

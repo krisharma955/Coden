@@ -31,9 +31,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -103,7 +100,7 @@ public class BundleServiceImpl implements BundleService {
     @Transactional(readOnly = true)
     public Page<BundleResponse> getBundles(BundleCategory bundleCategory, String search, Pageable pageable) {
         return bundleRepository
-                .findAll(BundleSpecification.filterBy(bundleCategory, search, isAdminCaller()), pageable)
+                .findAll(BundleSpecification.filterBy(bundleCategory, search, jwtAuthUtil.isAdminCaller()), pageable)
                 .map(bundleMapper::toBundleResponse);
     }
 
@@ -233,20 +230,10 @@ public class BundleServiceImpl implements BundleService {
                 .orElseThrow(() -> new ResourceNotFoundException(bundleId.toString(), "Bundle"));
 
         // non-admins only see PUBLISHED bundles; to them a draft simply doesn't exist
-        if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !isAdminCaller()) {
+        if (bundle.getBundleStatus() != BundleStatus.PUBLISHED && !jwtAuthUtil.isAdminCaller()) {
             throw new ResourceNotFoundException(bundleId.toString(), "Bundle");
         }
         return bundle;
-    }
-
-    private boolean isAdminCaller() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return false;
-        }
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(a -> a.equals("ROLE_ADMIN") || a.equals("ROLE_SUPER_ADMIN"));
     }
 
 }

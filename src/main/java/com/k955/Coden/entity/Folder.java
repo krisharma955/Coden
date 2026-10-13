@@ -14,7 +14,10 @@ import java.util.UUID;
 @Builder
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "folders")
+@Table(
+        name = "folders",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "name"})
+)
 public class Folder {
 
     @Id
@@ -25,7 +28,7 @@ public class Folder {
     @JoinColumn(name = "user_id", nullable = false)
     User user;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     String name;
 
     String description;

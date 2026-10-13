@@ -6,6 +6,7 @@ import com.k955.Coden.security.OAuth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -36,6 +37,8 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**", "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/health-check").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/bundles/*/download").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/snippets/**", "/api/bundles/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
